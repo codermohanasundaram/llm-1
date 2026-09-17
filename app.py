@@ -3,10 +3,8 @@ import streamlit as st
 from dotenv import load_dotenv
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import AIMessage, HumanMessage
+from llm_client import ask, PRIMARY_MODEL, FRIENDLY_ERR_MSG
 
-load_dotenv()
-
-MODEL="claude-sonnet-4-5"
 
 st.title("llm-1")
 st.set_page_config(page_title="day1-llm", page_icon="💬")
@@ -17,7 +15,7 @@ if not api_key:
     st.error("Set the ANTHROPIC_API_KEY environment variable (or put it in a .env file) and restart.")
     st.stop()
     
-llm = ChatAnthropic(model=MODEL, max_tokens=1024, api_key=api_key)
+llm = ChatAnthropic(model=PRIMARY_MODEL, max_tokens=1024, api_key=api_key)
 
 # Streamlit reruns this whole script on every interaction, so conversation
 # history has to live in st.session_state to survive between messages.
@@ -37,13 +35,14 @@ if user_input := st.chat_input("Ask Claude something..."):
  
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            response = llm.invoke(st.session_state.messages)
-        st.markdown(response.content)
- 
-    st.session_state.messages.append(AIMessage(content=response.content))
+            reply = ask(st.session_state.messages)  # timeout/retry/fallback handled inside
+        if reply == FRIENDLY_ERR_MSG:
+            st.warning(reply)  # visually distinct from a normal reply
+        else:
+            st.markdown(reply)
  
 with st.sidebar:
-    st.caption(f"Model: {MODEL}")
+    st.caption(f"Model: {PRIMARY_MODEL}")
     if st.button("Clear conversation"):
         st.session_state.messages = []
         st.rerun()

@@ -3,21 +3,17 @@ import sys
 from dotenv import load_dotenv
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import AIMessage, HumanMessage
+from llm_client import ask, PRIMARY_MODEL
 
-load_dotenv()
+def one_shot(question:str):
+    print(ask([HumanMessage(content=question)]))
 
-MODEL="claude-sonnet-4-5"
+llm = ChatAnthropic(model=PRIMARY_MODEL, max_tokens=1024, api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
-llm = ChatAnthropic(model=MODEL, max_tokens=1024, api_key=os.environ.get("ANTHROPIC_API_KEY"))
-
-def ask(message:str, history:list)->str:
-    messages = (history or []) + [HumanMessage(content=message)]
-    response = llm.invoke(messages)
-    return response.content
 
 
 def chat_loop():
-    print(f"Chatting with {MODEL}. Type 'exit' or Ctrl+C to quit.\n")
+    print(f"Chatting with {PRIMARY_MODEL}. Type 'exit' or Ctrl+C to quit.\n")
     history: list = []
     while True:
         try:
@@ -32,7 +28,7 @@ def chat_loop():
             break
             
         history.append(HumanMessage(content=user_input))
-        reply=ask(user_input,history=history[:-1])
+        reply=ask(history)
         print(f"Claude: {reply}\n")
         history.append(AIMessage(content=reply))
 
